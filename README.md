@@ -31,14 +31,12 @@ Published as `ghcr.io/deku-studios/lex-openclaw-image:<tag>` (private). Downstre
 **Hooks** (`/home/node/.openclaw/hooks/`):
 - `lex-telemetry` — fans OpenClaw gateway events into the Lex platform firehose. Sourced from `Deku-Studios/lex-telemetry` as a git submodule.
 
-**Globally-scoped skills** (`/home/node/.openclaw/skills/`, installed via `clawhub install`):
+**Globally-scoped skills** (`/.openclaw/skills/` — root-level, Lex convention, distinct from per-user `/home/node/.openclaw/`), installed via `clawhub install <slug> --workdir /.openclaw/skills/`:
 - `agent-browser-clawdbot`
 - `apify`
 - `blogwatcher`
 - `ffmpeg`
 - `market-research`
-- `market-strategy-pmm`
-- `memelord`
 - `playwright-cli-openclaw`
 - `self-improving-agent`
 - `seo-content-writer`
@@ -78,36 +76,6 @@ lex-openclaw-image/
   VERSION                   # read by release.yml; must match the git tag
 ```
 
-## First-time repo setup (Alex)
-
-The scaffold was generated in `/Users/alex/Documents/Lex/lex-software/lex-openclaw-image/`. To push it to GitHub and cut the v0.1.0 release:
-
-```bash
-cd /Users/alex/Documents/Lex/lex-software/lex-openclaw-image
-
-# 1. Create the .gitmodules file. The automated scaffold couldn't write
-#    it directly due to dotfile write protection in Cowork mode.
-cat > .gitmodules <<'EOF'
-[submodule "hooks/lex-telemetry"]
-	path = hooks/lex-telemetry
-	url = git@github.com:Deku-Studios/lex-telemetry.git
-	branch = main
-EOF
-
-# 2. Initialize git + add the submodule.
-git init
-git branch -m main
-git submodule add git@github.com:Deku-Studios/lex-telemetry.git hooks/lex-telemetry
-
-# 3. First commit.
-git add -A
-git commit -m "Initial scaffold: lex-openclaw-image v0.1.0"
-
-# 4. Create the empty private repo on GitHub at Deku-Studios/lex-openclaw-image
-#    via the GitHub UI, then:
-git remote add origin git@github.com:Deku-Studios/lex-openclaw-image.git
-git push -u origin main
-```
 
 ## GitHub Actions secrets
 

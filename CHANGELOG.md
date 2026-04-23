@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Playwright Chromium** via `playwright install --with-deps chromium` — pulls in the Ubuntu packages headless Chromium needs.
 - **memo wrapper** at `/usr/local/bin/memo` for Apple Notes CLI via Tailscale SSH into alex-mac-mini. The SSH key stays a runtime bind mount.
 - **lex-telemetry hook** at `/home/node/.openclaw/hooks/lex-telemetry/` — copied in from the `hooks/lex-telemetry` git submodule. Picked up automatically by OpenClaw's hook directory scan at boot.
-- **Globally-scoped skills** installed via `clawhub install`: agent-browser-clawdbot, apify, blogwatcher, ffmpeg, market-research, market-strategy-pmm, memelord, playwright-cli-openclaw, self-improving-agent, seo-content-writer, topic-monitor, transcriptapi.
+- **Globally-scoped skills** installed to `/.openclaw/skills/` via `clawhub install <slug> --workdir /.openclaw/skills/`: agent-browser-clawdbot, apify, blogwatcher, ffmpeg, market-research, playwright-cli-openclaw, self-improving-agent, seo-content-writer, topic-monitor, transcriptapi. (`marketing-strategy-pmm` and `memelord` deferred to v0.1.1 — see task #33.) Root-level install path (not `/home/node/.openclaw/` and not clawhub's default `/app/skills/`) matches Lex's "global skills" convention — genuinely user-agnostic and distinct from per-user OpenClaw config.
 
 ### Notes
 - Runtime still needs these bind-mounts from `/lex/instances/<slug>/` or `/home/node/.openclaw/credentials/`:

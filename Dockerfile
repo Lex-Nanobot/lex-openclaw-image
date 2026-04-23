@@ -123,25 +123,42 @@ COPY --chown=node:node hooks/lex-telemetry /home/node/.openclaw/hooks/lex-teleme
 # -----------------------------------------------------------------------------
 # Layer 7: globally-installed skills via clawhub.
 #
-# Kept LAST because this list changes more often than the heavy layers
-# above. clawhub install runs as the `node` user so skills land under
-# /home/node/.openclaw/skills/ with correct ownership.
+# Lex convention: global skills live at /.openclaw/skills/ (root-level,
+# not in node's home). Keeping them outside /home/node/ makes them
+# genuinely global — accessible regardless of which user OpenClaw runs
+# under on any given droplet — and distinguishes them from the per-user
+# OpenClaw config at /home/node/.openclaw/.
+#
+# --workdir overrides clawhub's default of /app/skills/. Kept LAST in
+# the Dockerfile so skill-list bumps don't invalidate the ~250MB
+# Chromium layer above.
 # -----------------------------------------------------------------------------
 
+# Create the global skills dir as root (only root can mkdir under /)
+# and hand ownership to node so clawhub (running as node) can write.
+USER root
+RUN mkdir -p /.openclaw/skills \
+ && chown -R node:node /.openclaw
+
 USER node
-RUN clawhub install \
+# clawhub install accepts one slug per invocation, so loop. `set -e`
+# aborts the RUN on first failure — a missing skill should break the
+# build loudly, not be silently skipped.
+RUN set -e; \
+    for skill in \
       agent-browser-clawdbot \
       apify \
       blogwatcher \
       ffmpeg \
       market-research \
-      market-strategy-pmm \
-      memelord \
       playwright-cli-openclaw \
       self-improving-agent \
       seo-content-writer \
       topic-monitor \
-      transcriptapi
+      transcriptapi; do \
+      echo "==> clawhub install $skill --workdir /.openclaw/"; \
+      clawhub install "$skill" --workdir /.openclaw/; \
+    done
 
 # -----------------------------------------------------------------------------
 # OCI labels for registry legibility.
