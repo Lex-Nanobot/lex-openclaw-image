@@ -1,0 +1,13 @@
+# Never ship git metadata or CI config into the image.
+.git
+.gitmodules
+.github/
+
+# Docs + changelogs inflate build context without helping the runtime.
+README.md
+CHANGELOG.md
+
+# OS junk that sometimes sneaks in.
+.DS_Store
+*.swp
+*.swo

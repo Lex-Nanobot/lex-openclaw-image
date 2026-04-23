@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# memo — wrapper to run Apple Notes CLI on alex-mac-mini via Tailscale SSH.
+#
+# The SSH identity at /home/node/.openclaw/.ssh/lex_ed25519 is bind-mounted
+# at container runtime. It is NEVER baked into the image. If this script
+# returns "Permission denied (publickey)" it means the mount is missing.
+#
+# Baked in as of lex-openclaw-image v0.1.0.
+
+ssh -o StrictHostKeyChecking=no \
+    -i /home/node/.openclaw/.ssh/lex_ed25519 \
+    alex@alex-mac-mini.tail9a6b58.ts.net \
+    'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init - bash)" && pyenv local 3.13.0 && memo '"$@"

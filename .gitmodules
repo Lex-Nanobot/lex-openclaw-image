@@ -1,0 +1,4 @@
+[submodule "hooks/lex-telemetry"]
+	path = hooks/lex-telemetry
+	url = git@github.com:Deku-Studios/lex-telemetry.git
+	branch = main
