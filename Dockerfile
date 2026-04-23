@@ -121,44 +121,73 @@ RUN chmod +x /usr/local/bin/memo
 COPY --chown=node:node hooks/lex-telemetry /home/node/.openclaw/hooks/lex-telemetry
 
 # -----------------------------------------------------------------------------
-# Layer 7: globally-installed skills via clawhub.
+# Layer 7: globally-installed skills from the openclaw/skills archive.
 #
-# Lex convention: global skills live at /.openclaw/skills/ (root-level,
-# not in node's home). Keeping them outside /home/node/ makes them
-# genuinely global — accessible regardless of which user OpenClaw runs
-# under on any given droplet — and distinguishes them from the per-user
-# OpenClaw config at /home/node/.openclaw/.
+# clawhub mirrors every published skill into github.com/openclaw/skills
+# via the clawdhub[bot] on publish. Pulling from that archive at a pinned
+# SHA gives us:
+#   * Deterministic builds — same SHA = same skill content forever.
+#   * No dependency on clawhub's rate limiter (GitHub Actions runners
+#     share IP pools that easily blow past clawhub's 180/15min cap).
+#   * One network round-trip for the whole skill set instead of N.
 #
-# --workdir overrides clawhub's default of /app/skills/. Kept LAST in
-# the Dockerfile so skill-list bumps don't invalidate the ~250MB
-# Chromium layer above.
+# Sparse-checkout + --filter=blob:none keeps the clone lean — we fetch
+# only the skill directories we'll copy into /.openclaw/skills/.
+#
+# Lex runtime naming: the archive paths sometimes carry a `-skill`
+# suffix or an author prefix (e.g. skills/openclaw/ffmpeg-skill/). We
+# normalize to bare slugs at copy time so the runtime sees clean names.
+#
+# Kept LAST in the Dockerfile so skill-list bumps don't invalidate the
+# ~250MB Chromium layer above.
 # -----------------------------------------------------------------------------
 
+# Pin to openclaw/skills main at 2026-04-23T21:02Z. Bump this SHA to
+# pick up new skill versions — a SHA change triggers a fresh skill
+# layer but leaves every earlier layer cached.
+ARG OPENCLAW_SKILLS_SHA=b6b31a72276f8abf29fedc2aeb7ce0aa890897aa
+
 # Create the global skills dir as root (only root can mkdir under /)
-# and hand ownership to node so clawhub (running as node) can write.
+# and hand ownership to node.
 USER root
 RUN mkdir -p /.openclaw/skills \
  && chown -R node:node /.openclaw
 
 USER node
-# clawhub install accepts one slug per invocation, so loop. `set -e`
-# aborts the RUN on first failure — a missing skill should break the
-# build loudly, not be silently skipped.
 RUN set -e; \
-    for skill in \
-      agent-browser-clawdbot \
-      apify \
-      blogwatcher \
-      ffmpeg \
-      market-research \
-      playwright-cli-openclaw \
-      self-improving-agent \
-      seo-content-writer \
-      topic-monitor \
-      transcriptapi; do \
-      echo "==> clawhub install $skill --workdir /.openclaw/"; \
-      clawhub install "$skill" --workdir /.openclaw/; \
-    done
+    git clone --filter=blob:none --no-checkout \
+      https://github.com/openclaw/skills.git /tmp/openclaw-skills; \
+    cd /tmp/openclaw-skills; \
+    git sparse-checkout init --cone; \
+    git sparse-checkout set \
+      skills/matrixy/agent-browser-clawdbot \
+      skills/openclaw/apify \
+      skills/steipete/blogwatcher \
+      skills/openclaw/ffmpeg-skill \
+      skills/ivangdavila/market-research \
+      skills/peterskoett/self-improving-agent \
+      skills/aaron-he-zhu/seo-content-writer \
+      skills/openclaw/topic-monitor \
+      skills/therohitdas/transcriptapi; \
+    git checkout "${OPENCLAW_SKILLS_SHA}"; \
+    # Copy each skill to /.openclaw/skills/<bare-slug>, normalizing the
+    # upstream path layout to Lex runtime conventions.
+    cp -r skills/matrixy/agent-browser-clawdbot   /.openclaw/skills/agent-browser-clawdbot; \
+    cp -r skills/openclaw/apify                   /.openclaw/skills/apify; \
+    cp -r skills/steipete/blogwatcher             /.openclaw/skills/blogwatcher; \
+    cp -r skills/openclaw/ffmpeg-skill            /.openclaw/skills/ffmpeg; \
+    cp -r skills/ivangdavila/market-research      /.openclaw/skills/market-research; \
+    cp -r skills/peterskoett/self-improving-agent /.openclaw/skills/self-improving-agent; \
+    cp -r skills/aaron-he-zhu/seo-content-writer  /.openclaw/skills/seo-content-writer; \
+    cp -r skills/openclaw/topic-monitor           /.openclaw/skills/topic-monitor; \
+    cp -r skills/therohitdas/transcriptapi        /.openclaw/skills/transcriptapi; \
+    # Drop the clone; skills are now at their runtime path.
+    rm -rf /tmp/openclaw-skills; \
+    # Remove .git directories from the skill dirs (they shouldn't exist
+    # after a sparse-checkout copy, but defense in depth).
+    find /.openclaw/skills -name .git -type d -exec rm -rf {} +; \
+    echo "==> skills baked:"; \
+    ls -la /.openclaw/skills/
 
 # -----------------------------------------------------------------------------
 # OCI labels for registry legibility.

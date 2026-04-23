@@ -31,13 +31,12 @@ Published as `ghcr.io/deku-studios/lex-openclaw-image:<tag>` (private). Downstre
 **Hooks** (`/home/node/.openclaw/hooks/`):
 - `lex-telemetry` — fans OpenClaw gateway events into the Lex platform firehose. Sourced from `Deku-Studios/lex-telemetry` as a git submodule.
 
-**Globally-scoped skills** (`/.openclaw/skills/` — root-level, Lex convention, distinct from per-user `/home/node/.openclaw/`), installed via `clawhub install <slug> --workdir /.openclaw/skills/`:
+**Globally-scoped skills** (`/.openclaw/skills/<bare-slug>/` — root-level, Lex convention, distinct from per-user `/home/node/.openclaw/`). Sourced by sparse-checkout from `github.com/openclaw/skills` (clawhub's canonical archive; `clawdhub[bot]` mirrors every publish) pinned at a specific SHA so builds are deterministic and not subject to clawhub's per-IP rate limit:
 - `agent-browser-clawdbot`
 - `apify`
 - `blogwatcher`
 - `ffmpeg`
 - `market-research`
-- `playwright-cli-openclaw`
 - `self-improving-agent`
 - `seo-content-writer`
 - `topic-monitor`
@@ -129,7 +128,12 @@ git push origin --tags
 
 ## Bumping a baked skill
 
-Add or remove a skill in the Dockerfile's `clawhub install` line (Layer 7). That layer is last in the Dockerfile precisely so skill bumps don't invalidate the 250MB Chromium layer above. Cut a patch release (`0.1.x`) for skill list changes; minor or major for upstream bumps.
+Two axes:
+
+- **Pick up new skill content from clawhub.** Bump `ARG OPENCLAW_SKILLS_SHA=` in the Dockerfile to the latest commit on `github.com/openclaw/skills` main (`clawdhub[bot]` writes there on every clawhub publish). One SHA covers every archive-sourced skill in one shot.
+- **Add or remove a skill from the image surface.** Edit the `git sparse-checkout set` list and the paired `cp -r` lines in Layer 7, normalizing the upstream path layout to a bare slug under `/.openclaw/skills/`.
+
+Either change keeps the ~250MB Chromium and npm-globals layers in cache — only Layer 7 rebuilds. Cut a patch release (`0.1.x`) for skill changes; minor or major for upstream OpenClaw bumps.
 
 ## Local build
 
