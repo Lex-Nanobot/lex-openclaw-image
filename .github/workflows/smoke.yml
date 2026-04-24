@@ -22,11 +22,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repo + submodules
+      - name: Check out main repo
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULE_READ_TOKEN }}
+        # Built-in GITHUB_TOKEN for main repo; cross-org PAT for submodule.
+
+      - name: Initialize private submodule with cross-org PAT
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_READ_TOKEN }}
+        run: |
+          git config --global \
+            url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+          git config --global \
+            url."https://github.com/".insteadOf \
+            "git@github.com:"
+          git submodule update --init --recursive
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

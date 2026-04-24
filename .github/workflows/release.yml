@@ -25,15 +25,30 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repo + submodules
+      - name: Check out main repo
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          # SUBMODULE_READ_TOKEN is a fine-grained PAT with "Contents: Read"
-          # on Deku-Studios/lex-telemetry (and any other private submodule
-          # this repo later picks up). The default GITHUB_TOKEN only sees
-          # the current repo, which breaks private-submodule checkouts.
-          token: ${{ secrets.SUBMODULE_READ_TOKEN }}
+        # No token override → uses the built-in GITHUB_TOKEN, which has
+        # access to this repo (Lex-Nanobot/lex-openclaw-image). The
+        # cross-org submodule (Deku-Studios/lex-telemetry) is fetched
+        # in the next step with its own narrow PAT. Splitting this way
+        # means SUBMODULE_READ_TOKEN only needs access to the submodule
+        # repo — not to this repo, whose org doesn't share its FGPAT
+        # configuration.
+
+      - name: Initialize private submodule with cross-org PAT
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_READ_TOKEN }}
+        run: |
+          git config --global \
+            url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+          # Rewrite any SSH submodule URLs (our .gitmodules uses
+          # git@github.com:...) to HTTPS so the token rewrite above takes
+          # effect. Safe to re-run; no-op if already HTTPS.
+          git config --global \
+            url."https://github.com/".insteadOf \
+            "git@github.com:"
+          git submodule update --init --recursive
 
       - name: Extract version from tag
         id: version

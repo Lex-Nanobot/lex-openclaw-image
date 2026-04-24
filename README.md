@@ -80,7 +80,7 @@ lex-openclaw-image/
 
 The workflows need one secret on the `Lex-Nanobot/lex-openclaw-image` repo (Settings → Secrets → Actions):
 
-- **`SUBMODULE_READ_TOKEN`** — fine-grained PAT with **Contents: Read** on `Deku-Studios/lex-telemetry` (and any other private submodule this repo later adopts). The default `GITHUB_TOKEN` only sees the current repo, which breaks private-submodule checkouts.
+- **`SUBMODULE_READ_TOKEN`** — fine-grained PAT with **Contents: Read** on `Deku-Studios/lex-telemetry` (and any other private submodule this repo later adopts). The main repo (`Lex-Nanobot/lex-openclaw-image`) is public and checks out via the built-in `GITHUB_TOKEN`; this PAT is used only for the cross-org submodule fetch in a separate workflow step. The PAT does NOT need access to `Lex-Nanobot` — only to whatever private repos the `.gitmodules` points at.
 
 The release workflow also uses `GITHUB_TOKEN` to push to GHCR, but that's built in — no secret needed.
 
