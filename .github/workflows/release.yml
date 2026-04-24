@@ -39,15 +39,16 @@ jobs:
         env:
           SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_READ_TOKEN }}
         run: |
+          # Map BOTH SSH and HTTPS GitHub URLs directly to the
+          # token-authenticated HTTPS form. Git's insteadOf is
+          # single-pass (no cascading), so each source scheme needs
+          # its own rule pointing at the final authenticated target.
           git config --global \
             url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-          # Rewrite any SSH submodule URLs (our .gitmodules uses
-          # git@github.com:...) to HTTPS so the token rewrite above takes
-          # effect. Safe to re-run; no-op if already HTTPS.
-          git config --global \
-            url."https://github.com/".insteadOf \
             "git@github.com:"
+          git config --global --add \
+            url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
           git submodule update --init --recursive
 
       - name: Extract version from tag

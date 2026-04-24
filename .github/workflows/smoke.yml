@@ -30,12 +30,14 @@ jobs:
         env:
           SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_READ_TOKEN }}
         run: |
+          # Map BOTH SSH and HTTPS directly to token-authenticated HTTPS.
+          # Single-pass insteadOf means no cascading rewrites.
           git config --global \
             url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-          git config --global \
-            url."https://github.com/".insteadOf \
             "git@github.com:"
+          git config --global --add \
+            url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
           git submodule update --init --recursive
 
       - name: Set up Docker Buildx
