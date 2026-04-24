@@ -2,7 +2,7 @@
 
 Lex-flavored [OpenClaw](https://openclaw.ai) container image. Ships the upstream OpenClaw runtime plus baked-in agent tooling, hooks, and globally-scoped skills so Lex instances boot with a full toolbelt out of the gate.
 
-Published as `ghcr.io/deku-studios/lex-openclaw-image:<tag>` (private). Downstream consumers in `lex-platform` pin by immutable digest, not tag.
+Published as `ghcr.io/lex-nanobot/lex-openclaw-image:<tag>` (public). Downstream consumers in `lex-platform` pin by immutable digest, not tag.
 
 ## What's baked in
 
@@ -78,7 +78,7 @@ lex-openclaw-image/
 
 ## GitHub Actions secrets
 
-The workflows need one secret on the `Deku-Studios/lex-openclaw-image` repo (Settings → Secrets → Actions):
+The workflows need one secret on the `Lex-Nanobot/lex-openclaw-image` repo (Settings → Secrets → Actions):
 
 - **`SUBMODULE_READ_TOKEN`** — fine-grained PAT with **Contents: Read** on `Deku-Studios/lex-telemetry` (and any other private submodule this repo later adopts). The default `GITHUB_TOKEN` only sees the current repo, which breaks private-submodule checkouts.
 
@@ -102,8 +102,8 @@ git push origin main --tags
 
 Pushing the tag triggers `release.yml`. The workflow verifies `VERSION` matches the tag or fails fast, builds amd64, and pushes:
 
-- `ghcr.io/deku-studios/lex-openclaw-image:v0.1.1`
-- `ghcr.io/deku-studios/lex-openclaw-image:latest`
+- `ghcr.io/lex-nanobot/lex-openclaw-image:v0.1.1`
+- `ghcr.io/lex-nanobot/lex-openclaw-image:latest`
 
 The immutable `sha256:...` digest lands in the GitHub Actions step summary on the run page. **That digest is what lex-platform pins into `Instance.image_digest`** — not the tag.
 
@@ -153,7 +153,7 @@ docker run --rm -it lex-openclaw-image:local bash
 Downstream pins look like this in lex-platform settings:
 
 ```python
-OPENCLAW_DEFAULT_IMAGE_TAG = "ghcr.io/deku-studios/lex-openclaw-image:v0.1.0"
+OPENCLAW_DEFAULT_IMAGE_TAG = "ghcr.io/lex-nanobot/lex-openclaw-image:v0.1.0"
 ```
 
 On first dispatch for an Instance, `apps/provisioning/tasks._build_instance_bundle` resolves that tag to its immutable digest via a GHCR manifest HEAD (using `OPENCLAW_GHCR_READ_TOKEN`), persists the digest onto `Instance.image_digest`, and uses the digest URL for the actual `docker pull` on the droplet. Later tag moves can't reskin existing instances — retries/redeploys use the frozen digest.

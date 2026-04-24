@@ -212,8 +212,8 @@ RUN set -e; \
 # -----------------------------------------------------------------------------
 
 ARG IMAGE_VERSION=dev
-LABEL org.opencontainers.image.source="https://github.com/Deku-Studios/lex-openclaw-image" \
+LABEL org.opencontainers.image.source="https://github.com/Lex-Nanobot/lex-openclaw-image" \
       org.opencontainers.image.description="Lex-flavored OpenClaw with baked agent tooling, hooks, and globally-scoped skills" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.licenses="UNLICENSED" \
-      org.opencontainers.image.vendor="Deku Studios"
+      org.opencontainers.image.vendor="Lex Nanobot"

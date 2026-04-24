@@ -69,8 +69,8 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ghcr.io/deku-studios/lex-openclaw-image:${{ steps.version.outputs.tag }}
-            ghcr.io/deku-studios/lex-openclaw-image:latest
+            ghcr.io/lex-nanobot/lex-openclaw-image:${{ steps.version.outputs.tag }}
+            ghcr.io/lex-nanobot/lex-openclaw-image:latest
           build-args: |
             IMAGE_VERSION=${{ steps.version.outputs.version }}
           # Use the GHA cache so unchanged upper layers don't get rebuilt
@@ -84,8 +84,8 @@ jobs:
             echo "## Release: ${{ steps.version.outputs.tag }}"
             echo ""
             echo "**Pushed tags:**"
-            echo "- \`ghcr.io/deku-studios/lex-openclaw-image:${{ steps.version.outputs.tag }}\`"
-            echo "- \`ghcr.io/deku-studios/lex-openclaw-image:latest\`"
+            echo "- \`ghcr.io/lex-nanobot/lex-openclaw-image:${{ steps.version.outputs.tag }}\`"
+            echo "- \`ghcr.io/lex-nanobot/lex-openclaw-image:latest\`"
             echo ""
             echo "**Immutable digest:**"
             echo ""
