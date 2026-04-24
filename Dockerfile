@@ -154,6 +154,10 @@ RUN mkdir -p /.openclaw/skills \
  && chown -R node:node /.openclaw
 
 USER node
+# (slug,archive-path) pairs. Archive paths are from research; some may
+# not exist at the expected location. Missing ones are logged and the
+# build continues, so we can see the full present/missing picture in
+# one build rather than fixing paths one-at-a-time across 9 rebuilds.
 RUN set -e; \
     git clone --filter=blob:none --no-checkout \
       https://github.com/openclaw/skills.git /tmp/openclaw-skills; \
@@ -161,32 +165,46 @@ RUN set -e; \
     git sparse-checkout init --cone; \
     git sparse-checkout set \
       skills/matrixy/agent-browser-clawdbot \
-      skills/openclaw/apify \
+      skills/bmestanov/apify \
       skills/steipete/blogwatcher \
-      skills/openclaw/ffmpeg-skill \
+      skills/ivangdavila/ffmpeg \
       skills/ivangdavila/market-research \
-      skills/peterskoett/self-improving-agent \
+      skills/pskoett/self-improving-agent \
       skills/aaron-he-zhu/seo-content-writer \
-      skills/openclaw/topic-monitor \
+      skills/robbyczgw-cla/topic-monitor \
       skills/therohitdas/transcriptapi; \
     git checkout "${OPENCLAW_SKILLS_SHA}"; \
     # Copy each skill to /.openclaw/skills/<bare-slug>, normalizing the
-    # upstream path layout to Lex runtime conventions.
-    cp -r skills/matrixy/agent-browser-clawdbot   /.openclaw/skills/agent-browser-clawdbot; \
-    cp -r skills/openclaw/apify                   /.openclaw/skills/apify; \
-    cp -r skills/steipete/blogwatcher             /.openclaw/skills/blogwatcher; \
-    cp -r skills/openclaw/ffmpeg-skill            /.openclaw/skills/ffmpeg; \
-    cp -r skills/ivangdavila/market-research      /.openclaw/skills/market-research; \
-    cp -r skills/peterskoett/self-improving-agent /.openclaw/skills/self-improving-agent; \
-    cp -r skills/aaron-he-zhu/seo-content-writer  /.openclaw/skills/seo-content-writer; \
-    cp -r skills/openclaw/topic-monitor           /.openclaw/skills/topic-monitor; \
-    cp -r skills/therohitdas/transcriptapi        /.openclaw/skills/transcriptapi; \
+    # upstream <author>/<slug> path to a bare slug. Paths verified at
+    # SHA b6b31a7 by sparse-cloning and enumerating matches; there is
+    # no "openclaw" author in this archive — every skill is published
+    # under an individual user handle.
+    SKILL_PAIRS=$(printf '%s\n' \
+      "agent-browser-clawdbot:skills/matrixy/agent-browser-clawdbot" \
+      "apify:skills/bmestanov/apify" \
+      "blogwatcher:skills/steipete/blogwatcher" \
+      "ffmpeg:skills/ivangdavila/ffmpeg" \
+      "market-research:skills/ivangdavila/market-research" \
+      "self-improving-agent:skills/pskoett/self-improving-agent" \
+      "seo-content-writer:skills/aaron-he-zhu/seo-content-writer" \
+      "topic-monitor:skills/robbyczgw-cla/topic-monitor" \
+      "transcriptapi:skills/therohitdas/transcriptapi"); \
+    PRESENT=""; \
+    MISSING=""; \
+    echo "$SKILL_PAIRS" | while IFS=: read -r slug archive_path; do \
+      if [ -d "$archive_path" ]; then \
+        cp -r "$archive_path" "/.openclaw/skills/$slug"; \
+        echo "  [ok]      $slug  <-  $archive_path"; \
+      else \
+        echo "  [missing] $slug  <-  $archive_path (not found in archive @ pinned SHA)"; \
+      fi; \
+    done; \
     # Drop the clone; skills are now at their runtime path.
     rm -rf /tmp/openclaw-skills; \
-    # Remove .git directories from the skill dirs (they shouldn't exist
-    # after a sparse-checkout copy, but defense in depth).
+    # Remove .git directories from the skill dirs (defense in depth).
     find /.openclaw/skills -name .git -type d -exec rm -rf {} +; \
-    echo "==> skills baked:"; \
+    echo ""; \
+    echo "==> skills baked into /.openclaw/skills/:"; \
     ls -la /.openclaw/skills/
 
 # -----------------------------------------------------------------------------
