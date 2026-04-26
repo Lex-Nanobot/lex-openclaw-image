@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-26
+
+### Added
+- **Firstboot secrets exchange** (`hooks/lex-firstboot-fetch.sh` +
+  `hooks/lex-entrypoint.sh`, baked into `/usr/local/bin/`). Audit doc:
+  `lex-drive/documents/secret-handling-audit-v1.md` (CRIT-2 fix).
+  - Replaces the upstream `docker-entrypoint.sh` ENTRYPOINT with a thin
+    wrapper that runs the firstboot fetch once, then `exec`s the
+    upstream entrypoint with whatever CMD was inherited (typically
+    `node ...`).
+  - The fetch script POSTs the burn-once bootstrap-token from
+    `/lex/secrets/bootstrap-token` to
+    `${LEX_PLATFORM_URL}/api/provisioning/instances/${LEX_INSTANCE_ID}/firstboot/`,
+    receives the shared MiniMax key (or empty env for BYO-only
+    instances), writes `tenant.env`, and shreds the token.
+  - **Required env vars at container start**: `LEX_INSTANCE_ID` and
+    `LEX_PLATFORM_URL`. Both are set by `lex-droplet-agent` v0.1.3+
+    via `-e` flags on `docker run`. Without either, the fetch
+    fails-soft (logs to stderr, exits 0) and the container starts in
+    BYO-only mode.
+  - Fully idempotent on container restart: if `tenant.env` already has
+    content, the fetch is skipped.
+
+### Notes
+- Pairs with `lex-droplet-agent` v0.1.3 (which adds the `-e
+  LEX_INSTANCE_ID=...` and `-e LEX_PLATFORM_URL=...` flags) and
+  `lex-platform`'s new `InstanceFirstBootView` at
+  `/api/provisioning/instances/<uuid>/firstboot/`.
+- No skill changes in this release. The `playwright-cli-openclaw` /
+  `marketing-strategy-pmm` / `memelord` re-add (originally targeted at
+  v0.1.1) is deferred to v0.1.2.
+
 ## [0.1.0] - 2026-04-23
 
 ### Added

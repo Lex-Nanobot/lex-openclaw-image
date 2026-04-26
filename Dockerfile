@@ -208,6 +208,58 @@ RUN set -e; \
     ls -la /.openclaw/skills/
 
 # -----------------------------------------------------------------------------
+# Layer 8: firstboot secrets exchange (CRIT-2 fix).
+#
+# Audit doc: lex-drive/documents/secret-handling-audit-v1.md
+#
+# Two scripts:
+#
+#   lex-firstboot-fetch.sh   POSTs the burn-once bootstrap-token to the
+#                            platform's /api/provisioning/instances/<id>/
+#                            firstboot/ endpoint, receives the shared
+#                            MiniMax key (or empty env for BYO-only
+#                            instances), writes tenant.env, and shreds
+#                            the bootstrap-token. Idempotent + fail-soft.
+#
+#   lex-entrypoint.sh        Runs the fetch script, then `exec`s the
+#                            upstream openclaw `docker-entrypoint.sh`
+#                            with whatever CMD was inherited (typically
+#                            `node ...`).
+#
+# Both live in /usr/local/bin so they're on PATH and root-owned (mode
+# 0755). Switching to USER root is required because the openclaw image
+# defaults to USER node and `node` cannot write to /usr/local/bin.
+# We switch back to USER node before the runtime baseline because
+# OpenClaw is designed to run as `node`, not root.
+#
+# Required env vars at container start (set by lex-droplet-agent
+# v0.1.3+ via -e flags on docker run):
+#
+#   LEX_INSTANCE_ID    UUID of this instance
+#   LEX_PLATFORM_URL   Platform base URL, e.g. https://api.lexnano.com
+#
+# Without those env vars, the firstboot fetch fails-soft and the
+# container starts without provider keys (BYO-only behavior).
+# -----------------------------------------------------------------------------
+
+USER root
+
+COPY hooks/lex-firstboot-fetch.sh /usr/local/bin/lex-firstboot-fetch.sh
+COPY hooks/lex-entrypoint.sh      /usr/local/bin/lex-entrypoint.sh
+RUN chmod 0755 /usr/local/bin/lex-firstboot-fetch.sh \
+                /usr/local/bin/lex-entrypoint.sh
+
+USER node
+
+# Override upstream's ENTRYPOINT (`docker-entrypoint.sh`) with our
+# wrapper so the firstboot fetch runs once before OpenClaw boots. CMD
+# is intentionally left unset so it inherits from the upstream image
+# (typically `node ...`); our wrapper passes "$@" through to
+# docker-entrypoint.sh unchanged.
+ENTRYPOINT ["/usr/local/bin/lex-entrypoint.sh"]
+
+
+# -----------------------------------------------------------------------------
 # OCI labels for registry legibility.
 # -----------------------------------------------------------------------------
 
